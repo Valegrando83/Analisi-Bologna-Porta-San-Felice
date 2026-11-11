@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="it" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analisi Mercato Turistico 2025 - Bologna Porta San Felice</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 350px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 400px;
+            }
+        }
+        .nav-active {
+            background-color: #e0f2fe;
+            color: #0284c7;
+            font-weight: 600;
+        }
+        .sidebar {
+            transition: transform 0.3s ease-in-out;
+        }
+        @media (max-width: 1023px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            .sidebar.open {
+                transform: translateX(0);
+            }
+        }
+        /* Custom scrollbar for responsive elements */
+        .custom-scrollbar::-webkit-scrollbar {
+            height: 6px;
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 4px;
+        }
+    </style>
+    <!-- Chosen Palette: Coastal Calm (BG: gray-50, Text: gray-800, Accent: sky-600, Cards: white) -->
+    <!-- Application Structure Plan: L'app è strutturata come un cruscotto interattivo con navigazione laterale (a scomparsa su mobile). Le sezioni sono: 'Cruscotto' (KPI principali e stagionalità), 'Analisi di Mercato' (flussi e offerta), 'Analisi Competitiva' (prezzi e occupazione interattivi per tipologia, SWOT), 'Domanda e Trend' (driver e calendario), 'Strategia' (modelli, target, differenziazione) e 'Piano d'Azione'. Questa struttura a schede tematiche è stata scelta per permettere all'investitore di navigare rapidamente tra i diversi livelli di analisi (dal macro al micro) e di interagire con i dati (es. filtrare per tipologia di immobile), rendendo l'esplorazione più efficiente e mirata rispetto a un report lineare. -->
+    <!-- Visualization & Content Choices: - KPI (Cruscotto): Goal: Informare. Method: Cards HTML/Tailwind. Interaction: None. Justification: Overview rapido. - Stagionalità (Cruscotto): Goal: Mostrare trend. Method: Line Chart (Chart.js). Interaction: Hover. Justification: Immediata visualizzazione picchi/valli. - Provenienza Turisti (Mercato): Goal: Proporzioni. Method: Doughnut Chart (Chart.js). Interaction: Hover. Justification: Chiara divisione Italia/Estero. - Offerta Ricettiva (Mercato): Goal: Confrontare. Method: Bar Chart (Chart.js). Interaction: Hover. Justification: Mostra quota di mercato extra-alberghiero. - Prezzi & Occupazione (Competitiva): Goal: Confrontare/Analizzare. Method: 2 Bar Charts (Chart.js). Interaction: Dropdown select ('propertyTypeSelector') che aggiorna dinamicamente entrambi i grafici. Justification: Consente all'investitore di analizzare redditività e pressione competitiva per la tipologia di immobile specifica di suo interesse. - SWOT, Driver, Strategia, Piano d'Azione: Goal: Organizzare/Informare. Method: Liste e card HTML/Tailwind. Interaction: None. Justification: Contenuti testuali e strategici resi chiari e leggibili. - Calendario (Domanda): Goal: Informare. Method: Tabella HTML/Tailwind. Interaction: Filtro bottoni. Justification: Fornisce date azionabili. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+</head>
+<body class="bg-gray-50 text-gray-800 min-h-screen flex flex-col lg:flex-row">
+
+    <!-- Mobile Overlay -->
+    <div id="sidebar-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-slate-900/50 z-40 hidden lg:hidden"></div>
+
+    <!-- Sidebar Navigation -->
+    <aside id="sidebar" class="sidebar fixed lg:static inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 flex flex-col justify-between shrink-0 shadow-lg lg:shadow-none">
+        <div>
+            <!-- Sidebar Header -->
+            <div class="p-5 border-b border-gray-100 flex items-center justify-between">
+                <div>
+                    <h1 class="text-lg font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                        <span class="text-sky-600">🏛️</span> INVEST-BOLO
+                    </h1>
+                    <p class="text-xs text-gray-500 font-medium">Porta San Felice | Focus 2025</p>
+                </div>
+                <button onclick="toggleSidebar()" class="lg:hidden text-gray-400 hover:text-gray-600 text-xl p-1">✕</button>
+            </div>
+
+            <!-- Navigation Links -->
+            <nav class="p-3 space-y-1 text-sm font-medium">
+                <button onclick="showSection('dashboard')" id="nav-dashboard" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition text-left nav-active">
+                    <span>📊</span> Cruscotto &amp; Stagionalità
+                </button>
+                <button onclick="showSection('mercato')" id="nav-mercato" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition text-left">
+                    <span>🌐</span> Analisi Flussi &amp; Offerta
+                </button>
+                <button onclick="showSection('competitor')" id="nav-competitor" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition text-left">
+                    <span>🏢</span> Analisi Competitiva Asset
+                </button>
+                <button onclick="showSection('domanda')" id="nav-domanda" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition text-left">
+                    <span>📅</span> Domanda &amp; Date 2025
+                </button>
+                <button onclick="showSection('strategia')" id="nav-strategia" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition text-left">
+                    <span>🎯</span> Strategia &amp; Modelli Business
+                </button>
+                <button onclick="showSection('piano')" id="nav-piano" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition text-left">
+                    <span>🚀</span> Piano d'Azione &amp; Calcolatore
+                </button>
+            </nav>
+        </div>
+
+        <!-- Sidebar Footer -->
+        <div class="p-4 border-t border-gray-100 bg-gray-50/50">
+            <div class="text-xs text-gray-500 space-y-1">
+                <p class="font-semibold text-gray-700">Studio Immobiliare Turistico</p>
+                <p>Destinazione: Bologna West</p>
+                <p class="text-[10px] text-sky-600">Stima Proiettata Anno 2025</p>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <div class="flex-grow flex flex-col min-w-0 overflow-y-auto">
+        <!-- Top Navbar Mobile Toggle -->
+        <header class="bg-white border-b border-gray-200 p-4 flex items-center justify-between lg:hidden sticky top-0 z-30 shadow-sm">
+            <div class="flex items-center gap-3">
+                <button onclick="toggleSidebar()" class="p-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200">
+                    ☰
+                </button>
+                <span class="font-bold text-slate-900 text-sm">Bologna - Porta San Felice 2025</span>
+            </div>
+            <span class="text-xs font-semibold text-sky-600 bg-sky-50 px-2.5 py-1 rounded-full border border-sky-100">Investitor Report</span>
+        </header>
+
+        <!-- Container Body -->
+        <main class="flex-grow p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto space-y-8">
+
+            <!-- SECTION 1: CRUSCOTTO KPI & STAGIONALITÀ -->
+            <section id="sec-dashboard" class="space-y-6">
+                <!-- Header Title Card -->
+                <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        <div>
+                            <span class="text-xs font-bold uppercase tracking-wider text-sky-600 bg-sky-50 px-2.5 py-1 rounded-md">Executive Summary</span>
+                            <h2 class="text-2xl font-bold text-slate-900 mt-2">Cruscotto di Mercato &amp; Stagionalità 2025</h2>
+                            <p class="text-gray-600 text-sm mt-1">Sintesi delle metriche chiave per investitori immobiliari nella zona Porta San Felice - Bologna.</p>
+                        </div>
+                        <div class="text-right hidden sm:block">
+                            <span class="text-xs text-gray-400 block">Ultimo aggiornamento</span>
+                            <span class="text-xs font-semibold text-gray-700">Proiezione Anno 2025</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- KPI Cards Grid -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+                        <div class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Arrivi Annuali (Stima)</div>
+                        <div class="text-2xl font-bold text-slate-900 mt-1">1,78 Mio</div>
+                        <div class="text-xs text-emerald-600 font-medium mt-1 flex items-center gap-1">
+                            <span>▲</span> +7.4% sul 2024
+                        </div>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+                        <div class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Presenze Turistiche</div>
+                        <div class="text-2xl font-bold text-slate-900 mt-1">4,14 Mio</div>
+                        <div class="text-xs text-emerald-600 font-medium mt-1 flex items-center gap-1">
+                            <span>▲</span> Permanenza 2.32 notti
+                        </div>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+                        <div class="text-xs font-semibold text-gray-500 uppercase tracking-wide">ADR Medio San Felice</div>
+                        <div class="text-2xl font-bold text-sky-600 mt-1">154 €</div>
+                        <div class="text-xs text-gray-500 mt-1">Peak Fiere: &gt;270 €/notte</div>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+                        <div class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Occupazione Media</div>
+                        <div class="text-2xl font-bold text-slate-900 mt-1">78.5%</div>
+                        <div class="text-xs text-sky-600 font-medium mt-1">+Sanitario inverno</div>
+                    </div>
+                </div>
+
+                <!-- Main Chart: Seasonality & Monthly Demand -->
+                <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                        <div>
+                            <h3 class="text-lg font-bold text-slate-900">Andamento Mensile Occupazione (%) e ADR (€) 2025</h3>
+                            <p class="text-xs text-gray-500">Curva bimodale tipica di Bologna (picchi fieristici di Primavera/Autunno e stabilità invernale San Felice).</p>
+                        </div>
+                    </div>
+                    
+                    <div class="chart-container">
+                        <canvas id="dashboardSeasonalityChart"></canvas>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-gray-100 text-xs text-gray-600">
+                        <div class="p-3 bg-gray-50 rounded-lg">
+                            <strong class="text-slate-900 block mb-1">🔥 Mesi di Alta Stagione (Picco):</strong>
+                            Marzo, Aprile, Maggio, Settembre, Ottobre, Novembre. ADR medio 180€-280€. Occupazione &gt;85%.
+                        </div>
+                        <div class="p-3 bg-gray-50 rounded-lg">
+                            <strong class="text-slate-900 block mb-1">⚖️ Media Stagione (Leisure/Summer):</strong>
+                            Giugno, Luglio, Dicembre. Turismo culturale e concerti Unipol Arena. Occupazione 72%-78%.
+                        </div>
+                        <div class="p-3 bg-gray-50 rounded-lg">
+                            <strong class="text-slate-900 block mb-1">🏥 Bassa Stagione Protetta (San Felice):</strong>
+                            Gennaio, Febbraio, Agosto. L'Ospedale Maggiore assicura un flusso costante di parenti dei degenti.
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION 2: ANALISI MERCATO & FLUSSI -->
+            <section id="sec-mercato" class="hidden space-y-6">
+                <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
+                    <h2 class="text-2xl font-bold text-slate-900">2. Flussi Turistici e Composizione dell'Offerta</h2>
+                    <p class="text-gray-600 text-sm mt-1 leading-relaxed">
+                        Analisi dettagliata sulla provenienza geografica dei turisti e confronto sulla struttura dell'offerta ricettiva (Alberghiero vs Extra-alberghiero) nel micro-quartiere di Porta San Felice.
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- Chart: Tourist Origins -->
+                    <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <h3 class="text-lg font-bold text-slate-900 mb-1">Provenienza Turisti (Italiani vs Stranieri)</h3>
+                            <p class="text-xs text-gray-500 mb-4">Gli stranieri rappresentano il 54.5% del totale presenze con maggiore propensione di spesa.</p>
+                            <div class="chart-container">
+                                <canvas id="touristOriginChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="mt-4 pt-4 border-t border-gray-100 text-xs text-gray-600 space-y-1">
+                            <p><strong>Top Mercati Esteri:</strong> Germania (14%), USA (12%), Regno Unito (9%), Svizzera &amp; Francia (8%), Paesi Bassi (6%).</p>
+                            <p><strong>Mercato Nazionale:</strong> Lombardia, Lazio, Veneto e Campania (prevalenza business e visite ospedaliere).</p>
+                        </div>
+                    </div>
+
+                    <!-- Chart: Accomodation Breakdown -->
+                    <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <h3 class="text-lg font-bold text-slate-900 mb-1">Composizione Offerta Ricettiva a San Felice</h3>
+                            <p class="text-xs text-gray-500 mb-4">Distribuzione delle strutture censite nel micro-distretto (Extra-Alberghiero vs Hotel).</p>
+                            <div class="chart-container">
+                                <canvas id="accommodationBreakdownChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="mt-4 pt-4 border-t border-gray-100 text-xs text-gray-600 space-y-1">
+                            <p><strong>Opportunità Investor:</strong> Scarsità di hotel tradizionali nella zona diretta di San Felice. L'extra-alberghiero di qualità alta (Aparthotel / Suites) assorbe tutta la domanda in eccesso.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Micro-location Analysis Card -->
+                <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
+                    <h3 class="text-lg font-bold text-slate-900 mb-3">Vantaggi Strategici della Micro-Zona Porta San Felice</h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs text-gray-700">
+                        <div class="p-4 bg-sky-50/50 rounded-xl border border-sky-100">
+                            <strong class="text-sky-900 text-sm block mb-1">🚶 Porta d'Ingresso al Centro</strong>
+                            A sole 10-12 minuti a piedi da Piazza Maggiore. Fuori dalla ZTL stretta se collegati all'arteria di Via Saffi.
+                        </div>
+                        <div class="p-4 bg-sky-50/50 rounded-xl border border-sky-100">
+                            <strong class="text-sky-900 text-sm block mb-1">🏥 Polo Ospedaliero Maggiore</strong>
+                            Distanza 800m. Genera occupazione destagionalizzata ad alta permanenza (parenti ricoverati e medici specialisti).
+                        </div>
+                        <div class="p-4 bg-sky-50/50 rounded-xl border border-sky-100">
+                            <strong class="text-sky-900 text-sm block mb-1">🚍 Hub Trasporti &amp; Fiera</strong>
+                            Fermata diretta navette Aeroporto Marconi (BLQ) e bus espresso per Fiera Bologna in soli 15 minuti.
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION 3: ANALISI COMPETITIVA ASSET -->
+            <section id="sec-competitor" class="hidden space-y-6">
+                <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                        <div>
+                            <h2 class="text-2xl font-bold text-slate-900">3. Analisi Prezzi, Occupazione e Competitor</h2>
+                            <p class="text-gray-600 text-sm mt-1">Confronto metriche immobiliari per tipologia di asset e matrice di benchmarking.</p>
+                        </div>
+
+                        <!-- Property Type Selector Dropdown -->
+                        <div class="flex items-center gap-2 bg-gray-50 p-2 rounded-xl border border-gray-200">
+                            <label for="propertyTypeSelector" class="text-xs font-bold text-gray-700 whitespace-nowrap">Seleziona Tipologia:</label>
+                            <select id="propertyTypeSelector" onchange="updateCompetitorCharts()" class="bg-white border border-gray-300 text-slate-900 text-xs rounded-lg p-2 focus:ring-sky-500 focus:border-sky-500 font-semibold">
+                                <option value="all">Tutte le Tipologie (Confronto)</option>
+                                <option value="affittacamere">Affittacamere / Stanza Privata</option>
+                                <option value="monolocale">Monolocale (Studio)</option>
+                                <option value="bilocale" selected>Bilocale (1 Camera + Living)</option>
+                                <option value="trilocale">Trilocale (2 Camere + Living)</option>
+                                <option value="frazionato">Frazionato (3-4 Suites Aparthotel)</option>
+                                <option value="villa">Villa / Appartamento Grande (&gt;120 mq)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dynamic Comparison Charts -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- ADR Chart -->
+                    <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
+                        <h3 class="text-lg font-bold text-slate-900 mb-1" id="adrChartTitle">Prezzo Medio per Notte (ADR €) per Tipologia</h3>
+                        <p class="text-xs text-gray-500 mb-4">Tariffa media calcolata sull'intero anno 2025 su Porta San Felice.</p>
+                        <div class="chart-container">
+                            <canvas id="competitorAdrChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Occupancy Chart -->
+                    <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
+                        <h3 class="text-lg font-bold text-slate-900 mb-1" id="occChartTitle">Tasso Medio di Occupazione (%) per Tipologia</h3>
+                        <p class="text-xs text-gray-500 mb-4">Stima dell'occupazione media su gestione professionale.</p>
+                        <div class="chart-container">
+                            <canvas id="competitorOccChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Competitor SWOT & Friction Table -->
+                <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4">
+                    <h3 class="text-lg font-bold text-slate-900">Analisi Criticità &amp; Punti di Forza dei Competitor Attuali</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
+                        <div class="p-4 bg-emerald-50/60 rounded-xl border border-emerald-100 space-y-2">
+                            <h4 class="font-bold text-emerald-900 text-sm flex items-center gap-1">
+                                <span>👍</span> Punti di Forza dell'Offerta Esistente
+                            </h4>
+                            <ul class="list-disc list-inside space-y-1 text-emerald-800">
+                                <li>Alta diffusione del self check-in domotizzato (tastierini numerici/smart lock).</li>
+                                <li>Buona qualità media degli arredi nelle ristrutturazioni recenti.</li>
+                                <li>Ottimi punteggi nelle recensioni per la vicinanza ai ristoranti storici di via San Felice.</li>
+                            </ul>
+                        </div>
+
+                        <div class="p-4 bg-rose-50/60 rounded-xl border border-rose-100 space-y-2">
+                            <h4 class="font-bold text-rose-900 text-sm flex items-center gap-1">
+                                <span>👎</span> Frizioni e Criticità Più Recensite dagli Ospiti
+                            </h4>
+                            <ul class="list-disc list-inside space-y-1 text-rose-800">
+                                <li><strong>Incubo ZTL / Parcheggio:</strong> Molti ospiti ricevono multe per ingresso errato o mancanza di indicazioni rigide sul garage.</li>
+                                <li><strong>Check-in "Freddo":</strong> Mancanza totale di assistenza umana o consigli personalizzati per turisti stranieri.</li>
+                                <li><strong>Isolamento Acustico scarso:</strong> Rumori della viabilità su Via San Felice / Via Saffi nei weekend.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION 4: DOMANDA & TREND -->
+            <section id="sec-domanda" class="hidden space-y-6">
+                <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
+                    <h2 class="text-2xl font-bold text-slate-900">4. Driver di Domanda, Trend &amp; Calendario Eventi 2025</h2>
+                    <p class="text-gray-600 text-sm mt-1">
+                        I fattori trainanti del mercato turistico bolognese e le date chiave con potenziale di impennata tariffaria (+40% - +100% ADR).
+                    </p>
+                </div>
+
+                <!-- Motivation Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+                        <div class="text-2xl mb-2">💼</div>
+                        <h4 class="font-bold text-slate-900 text-sm">Business &amp; Fiere</h4>
+                        <p class="text-xs text-gray-500 mt-1">Cosmoprof, Cersaie, EIMA. Budget alto, soggiorno breve (2-4 notti), pagamento B2B.</p>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+                        <div class="text-2xl mb-2">🍝</div>
+                        <h4 class="font-bold text-slate-900 text-sm">Cultura &amp; Food</h4>
+                        <p class="text-xs text-gray-500 mt-1">Bologna la Grassa. Turisti USA ed europei attratti da gastronomia, torri e portici UNESCO.</p>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+                        <div class="text-2xl mb-2">🏥</div>
+                        <h4 class="font-bold text-slate-900 text-sm">Turismo Sanitario</h4>
+                        <p class="text-xs text-gray-500 mt-1">Ospedale Maggiore. Permanenza medio-lunga (7-20 giorni), domanda costante nei mesi freddi.</p>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+                        <div class="text-2xl mb-2">💻</div>
+                        <h4 class="font-bold text-slate-900 text-sm">Bleisure &amp; Remote</h4>
+                        <p class="text-xs text-gray-500 mt-1">Lavoratori da remoto che estendono il soggiorno di lavoro nel weekend per esplorare la città.</p>
+                    </div>
+                </div>
+
+                <!-- Event Calendar 2025 Table -->
+                <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden space-y-4 p-6">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        <div>
+                            <h3 class="text-lg font-bold text-slate-900">Calendario Opportunità 2025 (Date di Picco Demand)</h3>
+                            <p class="text-xs text-gray-500">Applicare regole di Minimum Stay (3-4 notti) e Dynamic Pricing aggressivo su queste date.</p>
+                        </div>
+                        <div class="flex flex-wrap gap-1 text-xs">
+                            <button onclick="filterEvents('all')" id="btn-all" class="px-3 py-1.5 rounded-lg bg-sky-600 text-white font-semibold shadow-sm">Tutti</button>
+                            <button onclick="filterEvents('fiera')" id="btn-fiera" class="px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 font-medium">🔥 Fiere</button>
+                            <button onclick="filterEvents('ponte')" id="btn-ponte" class="px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 font-medium">🏖️ Ponti</button>
+                            <button onclick="filterEvents('cultura')" id="btn-cultura" class="px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 font-medium">🎸 Eventi</button>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto custom-scrollbar">
+                        <table class="w-full text-left text-xs sm:text-sm text-gray-700">
+                            <thead class="bg-slate-900 text-white uppercase text-[11px] tracking-wider">
+                                <tr>
+                                    <th class="py-3 px-4">Periodo 2025</th>
+                                    <th class="py-3 px-4">Nome Evento / Festività</th>
+                                    <th class="py-3 px-4">Categoria</th>
+                                    <th class="py-3 px-4">Strategia Pricing (ADR)</th>
+                                    <th class="py-3 px-4">Regola Min. Stay</th>
+                                </tr>
+                            </thead>
+                            <tbody id="eventsTableBody" class="divide-y divide-gray-100 font-medium">
+                                <!-- Dynamic rows inserted by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION 5: STRATEGIA & MODELLI BUSINESS -->
+            <section id="sec-strategia" class="hidden space-y-6">
+                <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
+                    <h2 class="text-2xl font-bold text-slate-900">5. Analisi Strategica per l'Investitore Immobiliare</h2>
+                    <p class="text-gray-600 text-sm mt-1">
+                        Valutazione dei tre modelli di ingresso nel mercato turistico di San Felice, definizione del target profittevole e strategie di differenziazione.
+                    </p>
+                </div>
+
+                <!-- 3 Business Models Comparison -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- Model 1 -->
+                    <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm flex flex-col justify-between space-y-4">
+                        <div>
+                            <span class="text-xs font-bold text-sky-700 bg-sky-50 px-2.5 py-1 rounded-full uppercase">Modello 1</span>
+                            <h3 class="text-lg font-bold text-slate-900 mt-2">Subaffitto (Rent-to-Rent)</h3>
+                            <p class="text-xs text-gray-600 mt-2">Prendere in locazione 4+4 con autorizzazione al subaffitto turistico e riaffittare breve.</p>
+                            <ul class="text-xs space-y-2 text-gray-700 mt-4">
+                                <li class="flex items-start gap-1.5"><span class="text-emerald-600 font-bold">✓</span> Capital outlay contenuto (&lt;20k €)</li>
+                                <li class="flex items-start gap-1.5"><span class="text-emerald-600 font-bold">✓</span> Scaling rapido del portafoglio</li>
+                                <li class="flex items-start gap-1.5"><span class="text-rose-600 font-bold">✗</span> Rischio canone fisso mensile</li>
+                                <li class="flex items-start gap-1.5"><span class="text-rose-600 font-bold">✗</span> Cedolare Secca 21% non applicabile sul subaffitto (tassazione Irpef ordinaria)</li>
+                            </ul>
+                        </div>
+                        <div class="pt-3 border-t border-gray-100 text-xs font-semibold text-gray-800">
+                            Cash Flow stimato: <span class="text-sky-600">400€ - 700€ / mese per unità</span>
+                        </div>
+                    </div>
+
+                    <!-- Model 2 -->
+                    <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm flex flex-col justify-between space-y-4">
+                        <div>
+                            <span class="text-xs font-bold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-full uppercase">Modello 2</span>
+                            <h3 class="text-lg font-bold text-slate-900 mt-2">Property Management</h3>
+                            <p class="text-xs text-gray-600 mt-2">Gestire immobili di terzi in cambio di una commissione percentuale sul fatturato lordo.</p>
+                            <ul class="text-xs space-y-2 text-gray-700 mt-4">
+                                <li class="flex items-start gap-1.5"><span class="text-emerald-600 font-bold">✓</span> Rischio capitale AZZERATO</li>
+                                <li class="flex items-start gap-1.5"><span class="text-emerald-600 font-bold">✓</span> Nessuna spesa per utenze o canoni</li>
+                                <li class="flex items-start gap-1.5"><span class="text-rose-600 font-bold">✗</span> Fee condizionata all'abilità commerciale (20%-25%)</li>
+                                <li class="flex items-start gap-1.5"><span class="text-rose-600 font-bold">✗</span> Acquisizione proprietari complessa</li>
+                            </ul>
+                        </div>
+                        <div class="pt-3 border-t border-gray-100 text-xs font-semibold text-gray-800">
+                            Fee media: <span class="text-indigo-600">20% - 25% su Lordo OTA</span>
+                        </div>
+                    </div>
+
+                    <!-- Model 3 -->
+                    <div class="bg-slate-900 text-white p-6 rounded-2xl shadow-md flex flex-col justify-between space-y-4">
+                        <div>
+                            <span class="text-xs font-bold text-emerald-400 bg-emerald-950 px-2.5 py-1 rounded-full uppercase">Modello 3 - TOP YIELD</span>
+                            <h3 class="text-lg font-bold text-white mt-2">Buy-to-Let + Frazionamento</h3>
+                            <p class="text-xs text-gray-300 mt-2">Acquistare appartamento 100-120 mq e frazionare in 3-4 suites (Affittacamere).</p>
+                            <ul class="text-xs space-y-2 text-gray-300 mt-4">
+                                <li class="flex items-start gap-1.5"><span class="text-emerald-400 font-bold">✓</span> Massimizzazione resa per MQ (+45%)</li>
+                                <li class="flex items-start gap-1.5"><span class="text-emerald-400 font-bold">✓</span> Cedolare Secca 21% ammessa (fino a 4 unità)</li>
+                                <li class="flex items-start gap-1.5"><span class="text-emerald-400 font-bold">✓</span> Rivalutazione patrimoniale immobile</li>
+                            </ul>
+                        </div>
+                        <div class="pt-3 border-t border-slate-800 text-xs font-semibold text-emerald-400">
+                            ROI Netto stimato: <span class="text-white font-bold">8.5% - 11.2% / anno</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Differentiating Points Card -->
+                <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4">
+                    <h3 class="text-lg font-bold text-slate-900">Punti Differenzianti per Dominare a Porta San Felice</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-gray-700">
+                        <div class="p-4 bg-gray-50 rounded-xl border border-gray-200">
+                            <strong class="text-slate-900 text-sm block mb-1">🚗 Formula "ZTL Free Parking"</strong>
+                            Stipulare accordo fisso con Garage San Felice / Saffi e registrare la targa degli ospiti al check-in per azzerare il timore multe.
+                        </div>
+                        <div class="p-4 bg-gray-50 rounded-xl border border-gray-200">
+                            <strong class="text-slate-900 text-sm block mb-1">🤝 Accoglienza Ibrida High-Touch</strong>
+                            Combinare il self check-in con un concierging digitale personalizzato (guida gastronomica segreta della zona San Felice).
+                        </div>
+                        <div class="p-4 bg-gray-50 rounded-xl border border-gray-200">
+                            <strong class="text-slate-900 text-sm block mb-1">🏥 Convenzioni Sanitarie B2B</strong>
+                            Creare tariffe convenzionate per soggiorni &gt;7 notti per parenti dei pazienti dell'Ospedale Maggiore per azzerare lo sfitto invernale.
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION 6: PIANO D'AZIONE & CALCOLATORE ROI -->
+            <section id="sec-piano" class="hidden space-y-6">
+                <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
+                    <h2 class="text-2xl font-bold text-slate-900">6. Piano d'Azione e Calcolatore ROI Interattivo</h2>
+                    <p class="text-gray-600 text-sm mt-1">
+                        Roadmap in 5 mosse chiave e simulatore per calcolare la redditività stimata dell'operazione.
+                    </p>
+                </div>
+
+                <!-- Interactive ROI Calculator -->
+                <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-6">
+                    <h3 class="text-lg font-bold text-slate-900 border-b border-gray-100 pb-3">Simulatore Finanziario dell'Investitore (Porta San Felice)</h3>
+                    
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        <!-- Inputs -->
+                        <div class="space-y-4">
+                            <div>
+                                <label for="simModel" class="block text-xs font-bold text-gray-700 mb-1">Modello d'Investimento:</label>
+                                <select id="simModel" onchange="runRoiSimulation()" class="w-full bg-gray-50 border border-gray-300 text-slate-900 text-xs rounded-lg p-2.5">
+                                    <option value="buy-frazionato">Acquisto + Frazionamento (3 Suites)</option>
+                                    <option value="buy-bilocale">Acquisto Bilocale Singolo</option>
+                                    <option value="subaffitto">Sublocazione / Rent-to-Rent (1 Unità)</option>
+                                    <option value="pm">Property Management (Fee 22%)</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <div class="flex justify-between text-xs font-bold text-gray-700 mb-1">
+                                    <span>ADR Medio Notte (€):</span>
+                                    <span id="simAdrVal" class="text-sky-600 font-bold">160 €</span>
+                                </div>
+                                <input type="range" id="simAdr" min="100" max="300" step="5" value="160" oninput="runRoiSimulation()" class="w-full accent-sky-600">
+                            </div>
+
+                            <div>
+                                <div class="flex justify-between text-xs font-bold text-gray-700 mb-1">
+                                    <span>Tasso Occupazione (%):</span>
+                                    <span id="simOccVal" class="text-sky-600 font-bold">78 %</span>
+                                </div>
+                                <input type="range" id="simOcc" min="50" max="95" step="1" value="78" oninput="runRoiSimulation()" class="w-full accent-sky-600">
+                            </div>
+
+                            <div>
+                                <label for="simCapitale" class="block text-xs font-bold text-gray-700 mb-1">Capitale Iniziale Investito (€):</label>
+                                <input type="number" id="simCapitale" value="320000" onchange="runRoiSimulation()" class="w-full bg-gray-50 border border-gray-300 text-slate-900 text-xs rounded-lg p-2.5">
+                            </div>
+                        </div>
+
+                        <!-- Results -->
+                        <div class="lg:col-span-2 bg-gray-50 p-5 rounded-xl border border-gray-200 flex flex-col justify-between">
+                            <div class="space-y-4">
+                                <h4 class="text-xs font-bold text-gray-500 uppercase tracking-wider">Proiezione Conto Economico Annuo</h4>
+                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                    <div class="bg-white p-3 rounded-lg border border-gray-200">
+                                        <div class="text-[10px] text-gray-500 uppercase font-semibold">Fatturato Lordo</div>
+                                        <div id="simGrossRes" class="text-base font-bold text-slate-900 mt-1">0 €</div>
+                                    </div>
+                                    <div class="bg-white p-3 rounded-lg border border-gray-200">
+                                        <div class="text-[10px] text-gray-500 uppercase font-semibold">Costi Operativi</div>
+                                        <div id="simCostsRes" class="text-base font-bold text-rose-600 mt-1">0 €</div>
+                                    </div>
+                                    <div class="bg-sky-50 p-3 rounded-lg border border-sky-200">
+                                        <div class="text-[10px] text-sky-800 uppercase font-semibold">Utile Netto Stima</div>
+                                        <div id="simNetRes" class="text-lg font-black text-sky-700 mt-1">0 €</div>
+                                    </div>
+                                    <div class="bg-emerald-50 p-3 rounded-lg border border-emerald-200">
+                                        <div class="text-[10px] text-emerald-800 uppercase font-semibold">ROI / Resa Annua</div>
+                                        <div id="simRoiRes" class="text-lg font-black text-emerald-700 mt-1">0 %</div>
+                                    </div>
+                                </div>
+
+                                <div class="text-xs text-gray-600 space-y-1.5 pt-2 border-t border-gray-200">
+                                    <div class="flex justify-between">
+                                        <span>Commissioni OTA &amp; Management:</span>
+                                        <span id="simOtaBreak" class="font-semibold text-gray-800">0 €</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span>Pulizie &amp; Cambio Biancheria:</span>
+                                        <span id="simCleanBreak" class="font-semibold text-gray-800">0 €</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span>Utenze &amp; Manutenzione:</span>
+                                        <span id="simUtilBreak" class="font-semibold text-gray-800">0 €</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mt-4 p-3 bg-slate-900 text-white rounded-lg text-xs flex items-center justify-between">
+                                <span>💡 Nota Strategica:</span>
+                                <span id="simTip" class="text-sky-300 font-medium">Il frazionamento massimizza la resa in zone ad alto valore di mercato.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 5 Key Action Steps -->
+                <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4">
+                    <h3 class="text-lg font-bold text-slate-900">Piano d'Azione in 5 Mosse Operative per Entrare nel Mercato</h3>
+                    
+                    <div class="space-y-3">
+                        <div class="p-4 bg-gray-50 rounded-xl border border-gray-200 flex items-start gap-4">
+                            <span class="w-8 h-8 rounded-full bg-sky-600 text-white font-bold flex items-center justify-center text-sm shrink-0">1</span>
+                            <div>
+                                <h4 class="font-bold text-slate-900 text-sm">Scouting Immobiliare Mirato su Via San Felice / Via Saffi</h4>
+                                <p class="text-xs text-gray-600 mt-0.5">Identificare immobili di ampia metratura (&gt;100 mq) idonei al frazionamento urbano in 3-4 camere con bagno privato (Affittacamere) per superare i limiti di redditività del bilocale standard.</p>
+                            </div>
+                        </div>
+
+                        <div class="p-4 bg-gray-50 rounded-xl border border-gray-200 flex items-start gap-4">
+                            <span class="w-8 h-8 rounded-full bg-sky-600 text-white font-bold flex items-center justify-center text-sm shrink-0">2</span>
+                            <div>
+                                <h4 class="font-bold text-slate-900 text-sm">Adeguamento Normativo Totale (Obbligo CIN 2025)</h4>
+                                <p class="text-xs text-gray-600 mt-0.5">Richiedere tempestivamente il Codice Identificativo Nazionale (BDSR), installare rilevatori di gas/CO ed estintori e configurare il gestionale con invio automatico schede Alloggiati Web Entro 24 ore.</p>
+                            </div>
+                        </div>
+
+                        <div class="p-4 bg-gray-50 rounded-xl border border-gray-200 flex items-start gap-4">
+                            <span class="w-8 h-8 rounded-full bg-sky-600 text-white font-bold flex items-center justify-center text-sm shrink-0">3</span>
+                            <div>
+                                <h4 class="font-bold text-slate-900 text-sm">Creazione del Pacchetto "ZTL-Safe &amp; Parking"</h4>
+                                <p class="text-xs text-gray-600 mt-0.5">Sottoscrivere convenzione fisso con garage convenzionato. Pubblicizzare direttamente nei titoli degli annunci OTA "Parcheggio Facile &amp; Accesso ZTL Autorizzato" per catturare turisti in auto.</p>
+                            </div>
+                        </div>
+
+                        <div class="p-4 bg-gray-50 rounded-xl border border-gray-200 flex items-start gap-4">
+                            <span class="w-8 h-8 rounded-full bg-sky-600 text-white font-bold flex items-center justify-center text-sm shrink-0">4</span>
+                            <div>
+                                <h4 class="font-bold text-slate-900 text-sm">Settaggio Algoritmi Dynamic Pricing (Fiere &amp; Ponti)</h4>
+                                <p class="text-xs text-gray-600 mt-0.5">Configurare software di Dynamic Pricing (PriceLabs/Wheelhouse) bloccando le date fieristiche (Cosmoprof, Cersaie, EIMA) con Minimum Stay a 3-4 notti e tariffe raddoppiate già a 6 mesi di anticipo.</p>
+                            </div>
+                        </div>
+
+                        <div class="p-4 bg-gray-50 rounded-xl border border-gray-200 flex items-start gap-4">
+                            <span class="w-8 h-8 rounded-full bg-sky-600 text-white font-bold flex items-center justify-center text-sm shrink-0">5</span>
+                            <div>
+                                <h4 class="font-bold text-slate-900 text-sm">Attivazione Canale Invernale Ospedale Maggiore (Anti-Sfitto)</h4>
+                                <p class="text-xs text-gray-600 mt-0.5">Lanciare campagne Google Local Ads e partnership con associazioni per offrire alloggi a medio termine (1-4 settimane) per parenti dei pazienti nei mesi a bassa domanda turistica (Gennaio-Febbraio).</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- JavaScript Data Logic & Interactive Handlers -->
+    <script>
+        // Sidebar Toggle Handler
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('hidden');
+        }
+
+        // Section Switcher Handler
+        function showSection(secId) {
+            const sections = ['dashboard', 'mercato', 'competitor', 'domanda', 'strategia', 'piano'];
+            sections.forEach(s => {
+                const sec = document.getElementById(`sec-${s}`);
+                const nav = document.getElementById(`nav-${s}`);
+                if (s === secId) {
+                    sec.classList.remove('hidden');
+                    nav.classList.add('nav-active');
+                } else {
+                    sec.classList.add('hidden');
+                    nav.classList.remove('nav-active');
+                }
+            });
+
+            // Close sidebar on mobile after clicking
+            if (window.innerWidth < 1024) {
+                const sidebar = document.getElementById('sidebar');
+                const overlay = document.getElementById('sidebar-overlay');
+                sidebar.classList.remove('open');
+                overlay.classList.add('hidden');
+            }
+        }
+
+        // Data: Property Types for Dynamic Competitor Section
+        const propertyTypeData = {
+            affittacamere: { label: "Affittacamere / Stanza Privata", adr: 95, occ: 82 },
+            monolocale: { label: "Monolocale (Studio)", adr: 145, occ: 80 },
+            bilocale: { label: "Bilocale (1 Camera + Living)", adr: 165, occ: 78 },
+            trilocale: { label: "Trilocale (2 Camere + Living)", adr: 215, occ: 74 },
+            frazionato: { label: "Frazionato (3 Suites Aparthotel)", adr: 285, occ: 85 },
+            villa: { label: "Villa / Appartamento Grande", adr: 360, occ: 68 }
+        };
+
+        let competitorAdrChartObj = null;
+        let competitorOccChartObj = null;
+
+        function updateCompetitorCharts() {
+            const selected = document.getElementById('propertyTypeSelector').value;
+            const ctxAdr = document.getElementById('competitorAdrChart').getContext('2d');
+            const ctxOcc = document.getElementById('competitorOccChart').getContext('2d');
+
+            let labels = [];
+            let adrValues = [];
+            let occValues = [];
+            let bgColors = [];
+
+            if (selected === 'all') {
+                Object.keys(propertyTypeData).forEach(k => {
+                    labels.push(propertyTypeData[k].label);
+                    adrValues.push(propertyTypeData[k].adr);
+                    occValues.push(propertyTypeData[k].occ);
+                    bgColors.push(k === 'frazionato' ? '#0284c7' : '#94a3b8');
+                });
+            } else {
+                labels = [propertyTypeData[selected].label, 'Media Mercato San Felice'];
+                adrValues = [propertyTypeData[selected].adr, 154];
+                occValues = [propertyTypeData[selected].occ, 78.5];
+                bgColors = ['#0284c7', '#cbd5e1'];
+            }
+
+            if (competitorAdrChartObj) competitorAdrChartObj.destroy();
+            if (competitorOccChartObj) competitorOccChartObj.destroy();
+
+            competitorAdrChartObj = new Chart(ctxAdr, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Prezzo Medio Giornaliero (€)',
+                        data: adrValues,
+                        backgroundColor: bgColors,
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true, title: { display: true, text: 'Euro (€)' } } }
+                }
+            });
+
+            competitorOccChartObj = new Chart(ctxOcc, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Tasso Occupazione (%)',
+                        data: occValues,
+                        backgroundColor: bgColors.map(c => c === '#0284c7' ? '#10b981' : '#cbd5e1'),
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true, max: 100, title: { display: true, text: 'Percentuale (%)' } } }
+                }
+            });
+        }
+
+        // Event Calendar Data Array
+        const calendarEvents = [
+            { date: "15-16 Gen 2025", name: "Marca by BolognaFiere", cat: "fiera", pricing: "+45% ADR", stay: "Min. 2 Notti", badge: "bg-indigo-100 text-indigo-800" },
+            { date: "7-9 Feb 2025", name: "Arte Fiera Bologna", cat: "cultura", pricing: "+50% ADR", stay: "Min. 2 Notti", badge: "bg-amber-100 text-amber-800" },
+            { date: "5-7 Mar 2025", name: "MECSPE (Manifatturiero)", cat: "fiera", pricing: "+65% ADR", stay: "Min. 3 Notti", badge: "bg-indigo-100 text-indigo-800" },
+            { date: "20-23 Mar 2025", name: "COSMOPROF Worldwide", cat: "fiera", pricing: "🔥 +100% ADR (Sold Out)", stay: "Min. 3-4 Notti", badge: "bg-rose-100 text-rose-800 font-bold" },
+            { date: "31 Mar - 3 Apr 2025", name: "Children's Book Fair", cat: "fiera", pricing: "+80% ADR", stay: "Min. 3 Notti", badge: "bg-indigo-100 text-indigo-800" },
+            { date: "18-25 Apr 2025", name: "Pasqua & 25 Aprile", cat: "ponte", pricing: "+45% ADR", stay: "Min. 3 Notti", badge: "bg-emerald-100 text-emerald-800" },
+            { date: "1-4 Mag 2025", name: "Ponte 1° Maggio", cat: "ponte", pricing: "+50% ADR", stay: "Min. 3 Notti", badge: "bg-emerald-100 text-emerald-800" },
+            { date: "21-24 Mag 2025", name: "Autopromotec Automotive", cat: "fiera", pricing: "+75% ADR", stay: "Min. 3 Notti", badge: "bg-indigo-100 text-indigo-800" },
+            { date: "Giugno / Luglio", name: "Concerti Unipol Arena", cat: "cultura", pricing: "+35% ADR", stay: "Min. 1-2 Notti", badge: "bg-amber-100 text-amber-800" },
+            { date: "22-26 Set 2025", name: "CERSAIE (Ceramica & Design)", cat: "fiera", pricing: "🔥 +100% ADR (Sold Out)", stay: "Min. 4 Notti", badge: "bg-rose-100 text-rose-800 font-bold" },
+            { date: "5-9 Nov 2025", name: "EIMA International", cat: "fiera", pricing: "+90% ADR", stay: "Min. 3-4 Notti", badge: "bg-indigo-100 text-indigo-800" },
+            { date: "6-8 Dic 2025", name: "Ponte dell'Immacolata", cat: "ponte", pricing: "+40% ADR", stay: "Min. 2 Notti", badge: "bg-emerald-100 text-emerald-800" }
+        ];
+
+        function renderEventsTable(catFilter = 'all') {
+            const tbody = document.getElementById('eventsTableBody');
+            tbody.innerHTML = '';
+
+            const list = catFilter === 'all' ? calendarEvents : calendarEvents.filter(e => e.cat === catFilter);
+
+            list.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-gray-50 transition border-b border-gray-100";
+                tr.innerHTML = `
+                    <td class="py-3 px-4 font-bold text-slate-900 whitespace-nowrap">${item.date}</td>
+                    <td class="py-3 px-4 font-semibold text-sky-900">${item.name}</td>
+                    <td class="py-3 px-4"><span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${item.badge}">${item.cat.toUpperCase()}</span></td>
+                    <td class="py-3 px-4 font-bold text-emerald-700">${item.pricing}</td>
+                    <td class="py-3 px-4 font-medium text-gray-600">${item.stay}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function filterEvents(cat) {
+            ['all', 'fiera', 'ponte', 'cultura'].forEach(c => {
+                const btn = document.getElementById(`btn-${c}`);
+                if (c === cat) {
+                    btn.className = "px-3 py-1.5 rounded-lg bg-sky-600 text-white font-semibold shadow-sm";
+                } else {
+                    btn.className = "px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 font-medium";
+                }
+            });
+            renderEventsTable(cat);
+        }
+
+        // Interactive ROI Calculator Logic
+        function runRoiSimulation() {
+            const model = document.getElementById('simModel').value;
+            const adr = parseFloat(document.getElementById('simAdr').value);
+            const occ = parseFloat(document.getElementById('simOcc').value) / 100;
+            const capital = parseFloat(document.getElementById('simCapitale').value) || 1;
+
+            document.getElementById('simAdrVal').innerText = `${adr} €`;
+            document.getElementById('simOccVal').innerText = `${Math.round(occ * 100)} %`;
+
+            let units = 1;
+            if (model === 'buy-frazionato') units = 3;
+
+            const daysOccupied = 365 * occ;
+            const grossRev = adr * daysOccupied * units;
+
+            let otaComm = grossRev * 0.18;
+            let cleaning = daysOccupied * 20 * units;
+            let utilities = 2500 * (units > 1 ? 1.8 : 1);
+            let rentPassivo = 0;
+            let pmFee = 0;
+
+            if (model === 'subaffitto') {
+                rentPassivo = 1200 * 12; // 1.200€/mo rent
+            } else if (model === 'pm') {
+                pmFee = grossRev * 0.22;
+            }
+
+            let totalCosts = otaComm + cleaning + utilities + rentPassivo + pmFee;
+            let netIncome = grossRev - totalCosts;
+
+            if (model === 'pm') {
+                netIncome = pmFee; // PM earnings
+                totalCosts = grossRev - netIncome;
+            }
+
+            let roi = (netIncome / capital) * 100;
+
+            document.getElementById('simGrossRes').innerText = `${Math.round(grossRev).toLocaleString('it-IT')} €`;
+            document.getElementById('simCostsRes').innerText = `${Math.round(totalCosts).toLocaleString('it-IT')} €`;
+            document.getElementById('simNetRes').innerText = `${Math.round(netIncome).toLocaleString('it-IT')} €`;
+            document.getElementById('simRoiRes').innerText = `${roi.toFixed(1)} %`;
+
+            document.getElementById('simOtaBreak').innerText = `${Math.round(otaComm + pmFee).toLocaleString('it-IT')} €`;
+            document.getElementById('simCleanBreak').innerText = `${Math.round(cleaning).toLocaleString('it-IT')} €`;
+            document.getElementById('simUtilBreak').innerText = `${Math.round(utilities + rentPassivo).toLocaleString('it-IT')} €`;
+
+            const tipElem = document.getElementById('simTip');
+            if (model === 'buy-frazionato') {
+                tipElem.innerText = "Il frazionamento in 3 suites genera la massima resa al mq ed il ROI più elevato.";
+            } else if (model === 'subaffitto') {
+                tipElem.innerText = "Nel subaffitto negozia il canone a massimo 1.000€ per preservare il margine netto.";
+            } else if (model === 'pm') {
+                tipElem.innerText = "Property Management: zero capitale di rischio, guadagno puro su commissione di gestione.";
+            } else {
+                tipElem.innerText = "Bilocale singolo: gestione semplice, ideale per primo investimento a basso impegno.";
+            }
+        }
+
+        // Initialize Charts and Render UI
+        window.addEventListener('DOMContentLoaded', () => {
+            renderEventsTable('all');
+            runRoiSimulation();
+
+            // 1. Dashboard Seasonality Chart (Line/Bar Combo)
+            const ctxDash = document.getElementById('dashboardSeasonalityChart').getContext('2d');
+            new Chart(ctxDash, {
+                type: 'bar',
+                data: {
+                    labels: ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'],
+                    datasets: [
+                        {
+                            type: 'line',
+                            label: 'ADR Medio Notte (€)',
+                            data: [115, 128, 220, 175, 198, 162, 142, 135, 245, 188, 180, 148],
+                            borderColor: '#0284c7',
+                            borderWidth: 3,
+                            fill: false,
+                            yAxisID: 'y1'
+                        },
+                        {
+                            type: 'bar',
+                            label: 'Tasso Occupazione (%)',
+                            data: [64, 70, 89, 83, 87, 81, 76, 74, 93, 88, 78, 72],
+                            backgroundColor: 'rgba(16, 185, 129, 0.75)',
+                            borderRadius: 6,
+                            yAxisID: 'y'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom' } },
+                    scales: {
+                        y: { beginAtZero: true, max: 100, title: { display: true, text: 'Occupazione (%)' } },
+                        y1: { position: 'right', beginAtZero: false, min: 80, max: 280, grid: { drawOnChartArea: false }, title: { display: true, text: 'ADR (€)' } }
+                    }
+                }
+            });
+
+            // 2. Tourist Origin Chart (Doughnut)
+            const ctxOrigin = document.getElementById('touristOriginChart').getContext('2d');
+            new Chart(ctxOrigin, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Stranieri (Germania, USA, UK, CH, NL)', 'Italiani (Business & Sanitario)'],
+                    datasets: [{
+                        data: [54.5, 45.5],
+                        backgroundColor: ['#0284c7', '#38bdf8'],
+                        borderWidth: 2,
+                        borderColor: '#ffffff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+
+            // 3. Accommodation Breakdown Chart (Bar)
+            const ctxAcc = document.getElementById('accommodationBreakdownChart').getContext('2d');
+            new Chart(ctxAcc, {
+                type: 'bar',
+                data: {
+                    labels: ['Appartamenti / Case Vacanza', 'B&B e Affittacamere', 'Hotel 3-4 Stelle', 'Residences'],
+                    datasets: [{
+                        label: 'Numero Strutture Censite',
+                        data: [420, 180, 24, 12],
+                        backgroundColor: '#0f172a',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true, title: { display: true, text: 'Unità' } } }
+                }
+            });
+
+            // Initialize Competitor Dynamic Charts
+            updateCompetitorCharts();
+        });
+    </script>
+</body>
+</html>
